@@ -1,0 +1,8 @@
+dist/
+node_modules/
+.android-signing/
+.android-tools/
+android/.gradle/
+android/**/build/
+android/local.properties
+.codex-remote-attachments/

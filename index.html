@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#2b2d31">
+  <title>叮咚</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg?v=dd2">
+  <link rel="stylesheet" href="style.css?v=dd2">
+</head>
+<body>
+  <div id="desktopTitlebar" aria-hidden="true"><img src="icon.svg?v=dd2" alt=""><span>叮咚</span></div>
+  <header id="mobileNav">
+    <button id="mobileChannels" class="mobile-nav-btn" aria-label="Open servers and channels" aria-controls="rail sidebar" aria-expanded="false"><span aria-hidden="true">☰</span><span id="mobileChannelsLabel">Channels</span></button>
+    <span id="mobileServerName">叮咚</span>
+    <button id="mobileCall" class="mobile-nav-btn hidden" title="Back to call" aria-label="Back to call"><i data-icon="speaker"></i></button>
+    <button id="mobileSettings" class="mobile-nav-btn" title="User settings" aria-label="User settings"><i data-icon="gear"></i></button>
+  </header>
+  <div id="app">
+    <button id="mobileBackdrop" class="hidden" aria-label="Close navigation"></button>
+    <!-- Server rail -->
+    <nav id="rail">
+      <button class="rail-btn home" id="homeBtn" title="Direct messages"><img src="icon.svg?v=dd2" alt="" draggable="false"></button>
+      <div class="rail-sep"></div>
+      <div id="serverList"></div>
+      <button class="rail-btn add" id="addServerBtn" title="Add a server"><i data-icon="plus"></i></button>
+    </nav>
+
+    <!-- Channel sidebar -->
+    <aside id="sidebar">
+      <header id="serverHeader">
+        <span id="serverName">叮咚</span>
+        <button id="serverMenuBtn" class="icon-btn" title="Server options"><i data-icon="chevron"></i></button>
+        <div id="serverMenu" class="menu hidden">
+          <button data-act="invite"><i data-icon="userPlus"></i>Invite people</button>
+          <button data-act="addText"><i data-icon="hash"></i>Create text channel</button>
+          <button data-act="addVoice"><i data-icon="speaker"></i>Create voice channel</button>
+          <button data-act="rename"><i data-icon="edit"></i>Rename server</button>
+          <button data-act="leave" class="danger"><i data-icon="logout"></i>Leave server</button>
+        </div>
+      </header>
+      <div id="channelList"></div>
+
+      <div id="voiceStatus" class="hidden">
+        <div class="vs-row">
+          <div class="vs-info">
+            <div class="vs-title"><i data-icon="signal"></i><span id="vsState">Voice Connected</span><span id="vsTime" title="Time in this call"></span></div>
+            <div class="vs-where" id="voiceWhere"></div>
+          </div>
+          <button class="icon-btn" id="vsLeave" title="Disconnect"><i data-icon="hangup"></i></button>
+        </div>
+        <div class="vs-buttons">
+          <button class="pill-btn" id="vsCam" title="Turn on camera"><i data-icon="camera"></i>Video</button>
+          <button class="pill-btn" id="vsShare" title="Share your screen"><i data-icon="screen"></i>Screen</button>
+        </div>
+      </div>
+
+      <footer id="userPanel">
+        <div class="avatar" id="meAvatar"></div>
+        <div class="me-info">
+          <div class="me-name" id="meName"></div>
+          <div class="me-status" id="meStatus">Online</div>
+        </div>
+        <button class="icon-btn" id="micBtn" title="Mute"><i data-icon="mic"></i></button>
+        <button class="icon-btn caret" id="micCaret" title="Input options"><i data-icon="chevUp"></i></button>
+        <button class="icon-btn" id="deafBtn" title="Deafen"><i data-icon="headphones"></i></button>
+        <button class="icon-btn caret" id="deafCaret" title="Output options"><i data-icon="chevUp"></i></button>
+        <button class="icon-btn" id="settingsBtn" title="User settings"><i data-icon="gear"></i></button>
+      </footer>
+    </aside>
+
+    <div class="resizer" id="sideResizer" title="Drag to resize"></div>
+
+    <!-- Main area -->
+    <main id="main">
+      <header id="mainHeader">
+        <span id="chanIcon"></span>
+        <span id="chanName"></span>
+        <span id="chanTopic"></span>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="searchTop" title="Search messages (Ctrl+F)"><i data-icon="search"></i></button>
+        <button class="icon-btn" id="inviteTop" title="Invite people"><i data-icon="userPlus"></i></button>
+        <button class="icon-btn" id="membersToggle" title="Member list"><i data-icon="users"></i></button>
+      </header>
+
+      <section id="welcome" class="view">
+        <div class="welcome-card">
+          <div class="welcome-logo"><img src="icon.svg?v=dd2" alt="叮咚" draggable="false"></div>
+          <h1>Welcome to 叮咚</h1>
+          <p>Servers, text channels and voice/video rooms. Fully peer-to-peer, powered by VDO.Ninja. No accounts, no backend.</p>
+          <div class="row">
+            <button class="btn primary" id="wCreate">Create a server</button>
+            <button class="btn" id="wJoin">Join with invite link</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="textView" class="view hidden">
+        <div id="messages"></div>
+        <div id="typing"></div>
+        <form id="composer" autocomplete="off">
+          <div id="replyBar" class="hidden" aria-live="polite"></div>
+          <div id="attachBar" class="hidden"></div>
+          <div id="mentionMenu" class="hidden" role="listbox" aria-label="Mention someone"></div>
+          <div class="composer-row">
+            <button type="button" class="icon-btn" id="attachBtn" title="Attach files (sent only when downloaded)"><i data-icon="plusCircle"></i></button>
+            <div class="input-wrap"><div id="msgMirror" aria-hidden="true"></div><textarea id="msgInput" rows="1" placeholder="Message"></textarea></div>
+            <button type="button" class="icon-btn" id="emojiBtn" title="Emoji"><i data-icon="smile"></i></button>
+            <button type="submit" class="icon-btn" id="sendBtn" title="Send message" aria-label="Send message"><i data-icon="chevron"></i></button>
+          </div>
+          <input type="file" id="fileInput" multiple hidden>
+        </form>
+        <div class="drop-hint">Drop files to share on request</div>
+      </section>
+
+      <section id="voiceView" class="view hidden">
+        <div id="voiceIdle">
+          <div class="vi-icon"><i data-icon="speaker"></i></div>
+          <h2 id="voiceIdleTitle"></h2>
+          <div id="voiceIdleWho"></div>
+          <div class="row">
+            <button class="btn green" id="joinVoiceBtn"><i data-icon="mic"></i>Join Voice</button>
+            <button class="btn" id="joinVideoBtn"><i data-icon="camera"></i>Join with Camera</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- The live VDO.Ninja call lives here and survives switching channels -->
+      <div id="voiceStage" class="hidden">
+        <div id="tiles"><button id="stripToggle" class="hidden" title="Hide members"><i data-icon="chevDown"></i><i data-icon="people"></i></button></div>
+        <div id="pubHost"></div>
+        <button class="btn primary hidden" id="devDone">Done choosing devices</button>
+        <div id="qMenu" class="hidden"></div>
+        <div class="mini-grip" data-c="tl"></div><div class="mini-grip" data-c="tr"></div><div class="mini-grip" data-c="bl"></div><div class="mini-grip" data-c="br"></div>
+        <div id="callBar">
+          <div class="call-group">
+            <span class="call-pair"><button class="call-btn" id="cbMic" title="Mute"><i data-icon="mic"></i></button><button class="call-caret" id="cbMicCaret" title="Input options"><i data-icon="chevUp"></i></button></span>
+            <span class="call-pair"><button class="call-btn" id="cbCam" title="Turn on camera"><i data-icon="camera"></i></button><button class="call-caret" id="cbCamCaret" title="Camera options"><i data-icon="chevUp"></i></button></span>
+            <button class="call-btn hidden" id="cbFlip" title="Flip camera"><i data-icon="flip"></i></button>
+          </div>
+          <div class="call-group">
+            <span class="call-pair"><button class="call-btn" id="cbShare" title="Share your screen"><i data-icon="screen"></i></button><button class="call-caret" id="cbShareCaret" title="Screen share options"><i data-icon="chevUp"></i></button></span>
+            <span class="call-pair"><button class="call-btn" id="cbDeaf" title="Deafen"><i data-icon="headphones"></i></button><button class="call-caret" id="cbDeafCaret" title="Output options"><i data-icon="chevUp"></i></button></span>
+            <span class="call-pair"><button class="call-btn" id="cbReact" title="Send a reaction"><i data-icon="smile"></i></button><button class="call-caret" id="cbReactCaret" title="More reactions"><i data-icon="chevUp"></i></button></span>
+            <button class="call-btn" id="cbSettings" title="Voice & video settings"><i data-icon="gear"></i></button>
+          </div>
+          <button class="call-btn danger" id="cbLeave" title="Disconnect"><i data-icon="hangup"></i></button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Members -->
+    <div class="resizer" id="memResizer" title="Drag to resize"></div>
+    <aside id="members"></aside>
+    <aside id="searchPanel" class="hidden" aria-label="Search messages"><div class="search-box">
+      <div class="search-top"><i data-icon="search"></i><input type="text" id="sQ" placeholder="Search messages" autocomplete="off" spellcheck="false"><button type="button" class="icon-btn" id="sClose" title="Close search (Esc)"><i data-icon="x"></i></button></div>
+      <div class="search-scope" id="sScope"></div>
+      <div class="search-out" id="sOut"></div>
+    </div></aside>
+  </div>
+
+  <!-- Hidden VDO.Ninja connections that carry chat + presence (one per server) -->
+  <div id="meshHost" aria-hidden="true"></div>
+
+  <!-- Modal -->
+  <div id="modalBack" class="hidden">
+    <div id="modal"></div>
+  </div>
+  <div id="toast" class="hidden"></div>
+  <div id="ctxMenu" class="hidden"></div>
+  <div id="emojiMenu" class="hidden"></div>
+
+  <script src="file-transfer.js?v=18"></script>
+  <script src="image-preview.js?v=2"></script>
+  <script src="screen-quality.js?v=1"></script>
+  <script src="zh.js?v=dd2"></script>
+  <script src="demo-select.js?v=dd2"></script>
+  <script src="app.js?v=72"></script>
+</body>
+</html>
