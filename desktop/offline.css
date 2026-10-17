@@ -1,0 +1,11 @@
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #313338; color: #dbdee1; font: 16px/1.6 'Segoe UI', sans-serif; }
+#desktopTitlebar { display: none; }
+.desktop-client body { min-height: calc(100vh - 32px); padding-top: 32px; }
+.desktop-client #desktopTitlebar { position: fixed; inset: 0 0 auto; height: 32px; display: flex; align-items: center; justify-content: center; background: #2b2d31; color: #b5bac1; font-size: 12px; font-weight: 600; -webkit-app-region: drag; user-select: none; }
+#desktopTitlebar img { position: absolute; left: 10px; width: 20px; height: 20px; }
+.desktop-darwin #desktopTitlebar img { left: 82px; }
+main { max-width: 500px; padding: 32px; }
+h1 { color: #f2f3f5; }
+a { display: inline-block; margin-top: 8px; padding: 10px 20px; background: #5865f2; color: white; border-radius: 6px; text-decoration: none; }
+a:hover { background: #4752c4; }
+a:focus-visible { outline: 2px solid white; outline-offset: 4px; }

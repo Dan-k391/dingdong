@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+}
+
+def signingEnvironment = [
+    storeFile: System.getenv('DINGDONG_ANDROID_KEYSTORE'),
+    keyAlias: System.getenv('DINGDONG_ANDROID_KEY_ALIAS'),
+    storePassword: System.getenv('DINGDONG_ANDROID_STORE_PASSWORD'),
+    keyPassword: System.getenv('DINGDONG_ANDROID_KEY_PASSWORD')
+]
+def releaseSigningAvailable = signingEnvironment.values().every { it != null && !it.isEmpty() }
+
+android {
+    namespace 'io.github.dank391.dingdong'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'io.github.dank391.dingdong'
+        minSdk 26
+        targetSdk 35
+        versionCode providers.gradleProperty('dingdongVersionCode').get().toInteger()
+        versionName providers.gradleProperty('dingdongVersionName').get()
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (releaseSigningAvailable) {
+                storeFile file(signingEnvironment.storeFile)
+                keyAlias signingEnvironment.keyAlias
+                storePassword signingEnvironment.storePassword
+                keyPassword signingEnvironment.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (releaseSigningAvailable) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0'
+    implementation 'androidx.webkit:webkit:1.13.0'
+    implementation 'io.github.webrtc-sdk:android:150.7871.01'
+}

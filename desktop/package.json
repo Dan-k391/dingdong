@@ -1,0 +1,61 @@
+{
+  "name": "dingdong-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "叮咚 desktop client for the hosted peer-to-peer chat app.",
+  "author": "Dan-k391",
+  "contributors": ["ZJJ-2785"],
+  "homepage": "https://dan-k391.github.io/dingdong/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dan-k391/dingdong.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64 --publish never"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "io.github.dank391.dingdong",
+    "productName": "DingDong",
+    "asar": true,
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "*.js",
+      "*.html",
+      "*.css",
+      "assets/*"
+    ],
+    "artifactName": "DingDong-Windows.${ext}",
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ]
+    },
+    "portable": {
+      "artifactName": "DingDong.exe"
+    },
+    "nsis": {
+      "artifactName": "DingDong-Setup.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "selectPerMachineByDefault": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

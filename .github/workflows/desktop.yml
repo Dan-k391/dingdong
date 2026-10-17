@@ -1,0 +1,102 @@
+name: Build Windows desktop
+
+on:
+  push:
+    branches: [main]
+    tags: ['desktop-v*']
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out the build commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install locked desktop dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Package the Windows client
+        working-directory: desktop
+        run: npm run build:win
+      - name: Write download checksums
+        run: |
+          $assets = @('DingDong.exe', 'DingDong-Setup.exe', 'DingDong-Windows.zip')
+          $checksums = foreach ($asset in $assets) {
+            $path = Join-Path 'dist' $asset
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              throw "Missing packaged asset: $asset"
+            }
+            $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $asset"
+          }
+          $checksums | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding ascii
+      - name: Upload Windows downloads
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: DingDong-Windows
+          path: |
+            dist/DingDong.exe
+            dist/DingDong-Setup.exe
+            dist/DingDong-Windows.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the packaged build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: DingDong-Windows
+          path: dist
+      - name: Publish the desktop tag in this repository
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:GITHUB_REF_NAME
+          $repository = $env:GITHUB_REPOSITORY
+          $assets = @('dist/DingDong.exe', 'dist/DingDong-Setup.exe', 'dist/DingDong-Windows.zip', 'dist/SHA256SUMS.txt')
+          foreach ($asset in $assets) {
+            if (-not (Test-Path -LiteralPath $asset -PathType Leaf)) {
+              throw "Missing release asset: $asset"
+            }
+          }
+          gh release view $tag --repo $repository *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --repo $repository --clobber
+          } else {
+            gh release create $tag @assets --repo $repository --verify-tag --title "叮咚 for Windows $tag" --generate-notes
+          }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'GitHub could not publish the Windows release.'
+          }

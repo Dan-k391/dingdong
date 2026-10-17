@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Share your screen — 叮咚</title>
+  <link rel="stylesheet" href="capture-picker.css">
+  <script src="capture-picker.js" defer></script>
+</head>
+<body>
+  <main class="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <header class="picker-header">
+      <img class="picker-logo" src="assets/icon.svg" alt="">
+      <div class="picker-heading">
+        <h1 id="picker-title">Share your screen</h1>
+        <p class="description">Pick a screen or an application window. You can stop any time from the Screen button.</p>
+      </div>
+      <button id="close" class="icon-button" type="button" aria-label="Cancel screen sharing" title="Cancel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+
+    <div class="source-toolbar">
+      <div class="source-tabs" role="tablist" aria-label="Source type">
+        <button id="screens-tab" class="source-tab active" type="button" role="tab" aria-selected="true" aria-controls="source-panel" data-kind="screen">Screens</button>
+        <button id="windows-tab" class="source-tab" type="button" role="tab" aria-selected="false" aria-controls="source-panel" tabindex="-1" data-kind="window">Applications</button>
+      </div>
+      <button id="refresh" class="icon-button" type="button" disabled aria-label="Refresh the list" title="Refresh">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.340-5.660M20 4v5h-5"/></svg>
+      </button>
+    </div>
+
+    <section id="source-panel" class="source-panel" role="tabpanel" aria-labelledby="screens-tab" aria-busy="true">
+      <p id="list-status" class="list-status" role="status">Finding screens and windows…</p>
+      <div id="sources" class="source-grid" role="list" aria-label="Available sources"></div>
+    </section>
+
+    <footer class="picker-footer">
+      <div class="footer-info">
+        <label id="audio-option" class="audio-option" hidden>
+          <input id="include-audio" type="checkbox">
+          <span class="switch" aria-hidden="true"></span>
+          <span>Share system audio</span>
+        </label>
+        <p id="selection-status" class="selection-status" role="status" aria-live="polite">Select a screen or window to continue.</p>
+        <p id="error" class="error" role="alert" hidden></p>
+      </div>
+      <div class="picker-actions">
+        <button id="cancel" class="button secondary" type="button">Cancel</button>
+        <button id="share" class="button primary" type="button" disabled>Share</button>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
