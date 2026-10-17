@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds and signs the 叮咚 APK on this machine, then hands only the signed APK to the
-# "Publish Android APK" workflow, which verifies it and publishes the android-v<version> release.
+# "Publish Android APK" workflow, which verifies it and adds it to the v<version> release.
 # The signing key stays in .android-signing/ (git-ignored) and is never pushed.
 #
 # Usage (Git Bash, from anywhere):  android/publish-apk.sh
@@ -20,7 +20,7 @@ export ANDROID_HOME="${ANDROID_HOME:-D:/Android/Sdk}"
   || { echo 'Commit or stash your changes first, so the tag matches what you built.' >&2; exit 1; }
 
 version=$(sed -n 's/^dingdongVersionName=//p' "$root/android/gradle.properties" | tr -d '\r')
-tag="android-v$version"
+tag="v$version"
 echo "Building $tag"
 
 password=$(sed -n 's/^password=//p' "$signing/signing.txt" | tr -d '\r')

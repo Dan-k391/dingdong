@@ -3,7 +3,7 @@ name: Build Windows desktop
 on:
   push:
     branches: [main]
-    tags: ['desktop-v*']
+    tags: ['v*']
     paths:
       - 'desktop/**'
       - '.github/workflows/desktop.yml'
@@ -34,6 +34,13 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: desktop/package-lock.json
+      - name: Check the release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $version = (Get-Content -Raw desktop/package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "The tag $env:GITHUB_REF_NAME must match desktop/package.json version $version."
+          }
       - name: Install locked desktop dependencies
         working-directory: desktop
         run: npm ci --no-audit --no-fund
@@ -65,38 +72,45 @@ jobs:
           retention-days: 30
 
   release:
-    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
-    runs-on: windows-2022
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
+    # The Android publisher adds its APK to the same release; one at a time keeps SHA256SUMS.txt whole.
+    concurrency:
+      group: release-${{ github.ref_name }}
+      cancel-in-progress: false
     steps:
       - name: Download the packaged build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: DingDong-Windows
           path: dist
-      - name: Publish the desktop tag in this repository
-        shell: pwsh
+      - name: Publish the Windows files to the release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $tag = $env:GITHUB_REF_NAME
-          $repository = $env:GITHUB_REPOSITORY
-          $assets = @('dist/DingDong.exe', 'dist/DingDong-Setup.exe', 'dist/DingDong-Windows.zip', 'dist/SHA256SUMS.txt')
-          foreach ($asset in $assets) {
-            if (-not (Test-Path -LiteralPath $asset -PathType Leaf)) {
-              throw "Missing release asset: $asset"
-            }
-          }
-          gh release view $tag --repo $repository *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag @assets --repo $repository --clobber
-          } else {
-            gh release create $tag @assets --repo $repository --verify-tag --title "叮咚 for Windows $tag" --generate-notes
-          }
-          if ($LASTEXITCODE -ne 0) {
-            throw 'GitHub could not publish the Windows release.'
-          }
+          set -euo pipefail
+          own='DingDong\.exe|DingDong-Setup\.exe|DingDong-Windows\.zip'
+          for asset in dist/DingDong.exe dist/DingDong-Setup.exe dist/DingDong-Windows.zip dist/SHA256SUMS.txt; do
+            [[ -f "$asset" ]] || { echo "Missing release asset: $asset" >&2; exit 1; }
+          done
+          : > previous.txt
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            exists=1
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern SHA256SUMS.txt --output previous.txt --clobber 2> /dev/null || : > previous.txt
+          else
+            exists=0
+          fi
+          { tr -d '\r' < previous.txt | grep -Ev "  ($own)$" || true; tr -d '\r' < dist/SHA256SUMS.txt; } | sort -k2 > checksums.txt
+          mv checksums.txt dist/SHA256SUMS.txt
+          assets=(dist/DingDong.exe dist/DingDong-Setup.exe dist/DingDong-Windows.zip dist/SHA256SUMS.txt)
+          if [[ $exists == 1 ]]; then
+            gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --verify-tag --title "叮咚 $TAG" --generate-notes
+          fi
