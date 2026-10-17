@@ -3,7 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [main]
-    tags: ['android-v*']
     paths:
       - 'android/**'
       - '.github/workflows/android.yml'
@@ -116,30 +115,3 @@ jobs:
           path: android/app/build/reports/lint-results-release.*
           if-no-files-found: ignore
           retention-days: 14
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/android-v')
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Download the signed APK
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: DingDong-Android
-          path: dist
-      - name: Publish the Android tag in this repository
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          tag="$GITHUB_REF_NAME"
-          assets=(dist/DingDong-Android.apk dist/SHA256SUMS.txt)
-          for asset in "${assets[@]}"; do [[ -f "$asset" ]] || { echo "Missing release asset: $asset" >&2; exit 1; }; done
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release upload "$tag" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$tag" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --verify-tag --title "叮咚 for Android $tag" --generate-notes
-          fi

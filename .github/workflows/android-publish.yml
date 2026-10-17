@@ -1,0 +1,60 @@
+name: Publish Android APK
+
+# The APK is built and signed on the maintainer's machine (android/publish-apk.sh), so the
+# signing key never reaches GitHub. That script pushes only the signed APK and a TAG file to
+# this branch; this workflow checks the signature and publishes the release.
+on:
+  push:
+    branches: [android-apk-upload]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the signed APK
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify the APK signer and version
+        id: verify
+        run: |
+          set -euo pipefail
+          tag=$(tr -d '[:space:]' < TAG)
+          [[ "$tag" =~ ^android-v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "TAG must look like android-v1.2.3, got '$tag'." >&2; exit 1; }
+          tools="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          apk=DingDong-Android.apk
+          "$tools/zipalign" -c -P 16 4 "$apk"
+          "$tools/apksigner" verify --verbose --print-certs "$apk" | tee signer.txt
+          grep -q 'certificate SHA-256 digest: 90c87cc83e3474c5be2cd073c771f691ecb9154a63d752b00a90c10428026af2' signer.txt \
+            || { echo 'The APK is not signed with the 叮咚 release key.' >&2; exit 1; }
+          version=$("$tools/aapt2" dump badging "$apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          [[ "$tag" == "android-v$version" ]] || { echo "APK versionName $version does not match $tag." >&2; exit 1; }
+          mkdir -p dist
+          cp "$apk" dist/
+          (cd dist && sha256sum "$apk" > SHA256SUMS.txt)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Publish the Android tag in this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.verify.outputs.tag }}
+        run: |
+          set -euo pipefail
+          assets=(dist/DingDong-Android.apk dist/SHA256SUMS.txt)
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --verify-tag --title "叮咚 for Android $TAG" --generate-notes
+          fi
